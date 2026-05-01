@@ -1,0 +1,15 @@
+services:
+  aura:
+    build: .
+    container_name: openaura
+    ports:
+      - "8000:8000"
+    volumes:
+      - aura_data:/app/backend
+      - ${PHOTOS_DIR:-~/fotos}:/photos:ro
+    environment:
+      - AURA_API_URL=
+    restart: unless-stopped
+
+volumes:
+  aura_data:

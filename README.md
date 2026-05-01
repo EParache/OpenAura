@@ -6,12 +6,25 @@ Escanea directorios, indexa fotos y videos, genera miniaturas y permite organiza
 
 ---
 
-## Requisitos
+## Instalación con Docker (recomendado)
 
+```bash
+git clone https://github.com/EParache/OpenAura.git
+cd OpenAura
+
+# Crear archivo .env con la ruta de tus fotos
+echo "PHOTOS_DIR=/ruta/a/tus/fotos" > .env
+
+docker compose up -d
+```
+
+Abrí `http://localhost:8000`. La carpeta de fotos se monta en `/photos` dentro del contenedor.
+
+## Instalación manual
+
+### Requisitos
 - Python 3.10+
-- Flutter SDK (solo para compilar el frontend)
-
-## Instalación
+- Flutter SDK (para compilar el frontend)
 
 ### Backend
 
@@ -26,23 +39,29 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### Frontend (web)
+### Frontend (web + Linux nativo)
 
 ```bash
 cd OpenAura/frontend
 flutter pub get
+
+# Web
 flutter build web --release
+
+# Linux nativo
+flutter build linux --release
+./build/linux/x64/release/bundle/aura_frontend
 ```
 
-El backend sirve automáticamente los archivos compilados desde `frontend/build/web/`.
+El backend sirve automáticamente los archivos compilados del frontend web.
 
 ## Uso
 
-1. Abrí `http://localhost:8000` en el navegador
+1. Abrí la app (web o nativa)
 2. Usá el ícono de carpeta en la barra lateral para escanear un directorio
 3. Las fotos indexadas aparecen en la galería, agrupadas por mes
 
-El frontend detecta automáticamente la IP del servidor en red local. Para acceder desde otro equipo usá `http://IP_DEL_SERVIDOR:8000`.
+El frontend detecta automáticamente la IP del servidor en red local.
 
 ## Stack
 

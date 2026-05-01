@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Flutter
+.dart_tool/
+.pub-cache/
+.idea/
+*.iml
+.metadata
+frontend/build/
+frontend/.dart_tool/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
