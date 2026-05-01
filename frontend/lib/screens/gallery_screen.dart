@@ -199,7 +199,7 @@ class _MediaTileState extends State<_MediaTile> {
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             transform: _hovered
-                ? (Matrix4.identity()..translate(0, -3, 0)..scale(1.02))
+                ? (Matrix4.translationValues(0, -3, 0)..scale(1.02))
                 : Matrix4.identity(),
             decoration: BoxDecoration(
               color: Colors.white,

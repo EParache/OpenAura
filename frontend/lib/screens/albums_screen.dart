@@ -327,7 +327,7 @@ class _AlbumTileState extends State<_AlbumTile> {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
           transform: _hovered
-              ? (Matrix4.identity()..translate(0, -4, 0)..scale(1.02))
+              ? (Matrix4.translationValues(0, -4, 0)..scale(1.02))
               : Matrix4.identity(),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
