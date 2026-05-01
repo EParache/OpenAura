@@ -96,11 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onSidebarChanged(int index) {
-    if (index == 2) {
-      _openScanDialog(context);
-      return;
-    }
     setState(() => _selectedIndex = index);
+  }
+
+  void _onScanTap() {
+    _openScanDialog(context);
   }
 
   void _onSettingsTap() {
@@ -117,7 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIndex: _selectedIndex,
             onChanged: _onSidebarChanged,
             onMenuTap: _rescan,
-            onSettingsTap: _onSettingsTap,
+            onRescan: _rescan,
+            onScan: _onScanTap,
+            onSettings: _onSettingsTap,
           ),
           Expanded(
             child: Column(

@@ -4,7 +4,9 @@ class AuraSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final VoidCallback onMenuTap;
-  final VoidCallback onSettingsTap;
+  final VoidCallback onRescan;
+  final VoidCallback onScan;
+  final VoidCallback onSettings;
 
   static const _accent = Color(0xFFD81B60);
   static const _inactiveIcon = Color(0xFF757575);
@@ -14,7 +16,9 @@ class AuraSidebar extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     required this.onMenuTap,
-    required this.onSettingsTap,
+    required this.onRescan,
+    required this.onScan,
+    required this.onSettings,
   });
 
   @override
@@ -41,18 +45,11 @@ class AuraSidebar extends StatelessWidget {
             selected: selectedIndex == 1,
             onTap: () => onChanged(1),
           ),
-          _NavIcon(
-            icon: Icons.folder_open_rounded,
-            tooltip: 'Escanear carpeta',
-            selected: selectedIndex == 2,
-            onTap: () => onChanged(2),
-          ),
           const Spacer(),
-          _NavIcon(
-            icon: Icons.settings_rounded,
-            tooltip: 'Configuracion',
-            selected: false,
-            onTap: onSettingsTap,
+          _GearMenu(
+            onRescan: onRescan,
+            onScan: onScan,
+            onSettings: onSettings,
           ),
           const SizedBox(height: 16),
         ],
@@ -74,6 +71,84 @@ class _MenuButton extends StatelessWidget {
         color: const Color(0xFF4A4A4A),
         child: const Center(
           child: Icon(Icons.menu, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _GearMenu extends StatelessWidget {
+  final VoidCallback onRescan;
+  final VoidCallback onScan;
+  final VoidCallback onSettings;
+
+  const _GearMenu({
+    required this.onRescan,
+    required this.onScan,
+    required this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (action) {
+        switch (action) {
+          case 'rescan':
+            onRescan();
+            break;
+          case 'scan':
+            onScan();
+            break;
+          case 'settings':
+            onSettings();
+            break;
+        }
+      },
+      offset: const Offset(60, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'rescan',
+          child: Row(
+            children: [
+              Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF666666)),
+              SizedBox(width: 10),
+              Text('Re-escanear', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'scan',
+          child: Row(
+            children: [
+              Icon(Icons.folder_open_rounded, size: 20, color: Color(0xFF666666)),
+              SizedBox(width: 10),
+              Text('Escanear carpeta', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'settings',
+          child: Row(
+            children: [
+              Icon(Icons.settings_rounded, size: 20, color: Color(0xFF666666)),
+              SizedBox(width: 10),
+              Text('Configuracion', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.settings_rounded,
+          size: 22,
+          color: AuraSidebar._inactiveIcon,
         ),
       ),
     );
