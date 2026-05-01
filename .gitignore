@@ -22,8 +22,7 @@ build/
 
 # DB and cache
 aura.db
-cache/thumbnails/*
-!cache/thumbnails/.gitkeep
+cache/
 scanned_paths.json
 
 # OS
