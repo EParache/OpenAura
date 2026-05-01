@@ -310,7 +310,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       borderRadius: BorderRadius.circular(4),
       child: Image.network(
         widget.media.type == 'video'
-            ? (widget.media.thumbnailPath ?? widget.media.fileUrl(widget.api.baseUrl))
+            ? (widget.media.thumbnailUrl(widget.api.baseUrl) ?? widget.media.fileUrl(widget.api.baseUrl))
             : widget.media.fileUrl(widget.api.baseUrl),
         fit: BoxFit.contain,
         loadingBuilder: (ctx, child, progress) {

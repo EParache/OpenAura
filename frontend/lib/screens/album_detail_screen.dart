@@ -179,6 +179,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                                 final mediaItem = _album.media[index];
                                 return _MediaInAlbumTile(
                                   media: mediaItem,
+                                  baseUrl: widget.api.baseUrl,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -320,7 +321,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   Widget _thumbWidget(Media m, double size) {
-    final thumb = m.thumbnailPath;
+    final thumb = m.thumbnailUrl(widget.api.baseUrl);
     if (thumb != null && thumb.isNotEmpty) {
       return Image.network(
         thumb,
@@ -345,11 +346,13 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
 
 class _MediaInAlbumTile extends StatefulWidget {
   final Media media;
+  final String baseUrl;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _MediaInAlbumTile({
     required this.media,
+    required this.baseUrl,
     required this.onTap,
     required this.onLongPress,
   });
@@ -423,7 +426,7 @@ class _MediaInAlbumTileState extends State<_MediaInAlbumTile> {
   }
 
   Widget _thumbnail() {
-    final thumb = widget.media.thumbnailPath;
+    final thumb = widget.media.thumbnailUrl(widget.baseUrl);
     if (thumb != null && thumb.isNotEmpty) {
       return Image.network(
         thumb,

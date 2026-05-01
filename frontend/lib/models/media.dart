@@ -35,6 +35,11 @@ class Media {
 
   String fileUrl(String baseUrl) => '$baseUrl/media/$id/file';
 
+  String? thumbnailUrl(String baseUrl) {
+    if (thumbnailPath == null || thumbnailPath!.isEmpty) return null;
+    return '$baseUrl$thumbnailPath';
+  }
+
   int? get width => metadataJson?['width'] as int?;
   int? get height => metadataJson?['height'] as int?;
   String? get format => metadataJson?['format'] as String?;

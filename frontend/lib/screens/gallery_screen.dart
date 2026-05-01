@@ -102,6 +102,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           final group = groups[index];
           return _MonthSection(
             group: group,
+            baseUrl: widget.api.baseUrl,
             onTap: (media) => _openDetail(media),
           );
         },
@@ -133,9 +134,10 @@ class _MonthGroup {
 
 class _MonthSection extends StatelessWidget {
   final _MonthGroup group;
+  final String baseUrl;
   final void Function(Media) onTap;
 
-  const _MonthSection({required this.group, required this.onTap});
+  const _MonthSection({required this.group, required this.baseUrl, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +167,7 @@ class _MonthSection extends StatelessWidget {
           itemCount: group.media.length,
           itemBuilder: (context, index) {
             final m = group.media[index];
-            return _MediaTile(media: m, onTap: () => onTap(m));
+            return _MediaTile(media: m, baseUrl: baseUrl, onTap: () => onTap(m));
           },
         ),
       ],
@@ -175,9 +177,10 @@ class _MonthSection extends StatelessWidget {
 
 class _MediaTile extends StatefulWidget {
   final Media media;
+  final String baseUrl;
   final VoidCallback onTap;
 
-  const _MediaTile({required this.media, required this.onTap});
+  const _MediaTile({required this.media, required this.baseUrl, required this.onTap});
 
   @override
   State<_MediaTile> createState() => _MediaTileState();
@@ -218,7 +221,7 @@ class _MediaTileState extends State<_MediaTile> {
   }
 
   Widget _thumbnail() {
-    final thumb = widget.media.thumbnailPath;
+    final thumb = widget.media.thumbnailUrl(widget.baseUrl);
     if (thumb != null && thumb.isNotEmpty) {
       return Image.network(
         thumb,

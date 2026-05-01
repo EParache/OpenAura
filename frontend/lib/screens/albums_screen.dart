@@ -153,6 +153,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                 final album = _albums[index];
                 return _AlbumTile(
                   album: album,
+                  baseUrl: widget.api.baseUrl,
                   onTap: () => _openAlbum(album),
                   onDelete: () => _deleteAlbum(album),
                   onRename: () => _renameAlbum(album),
@@ -292,12 +293,14 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
 class _AlbumTile extends StatefulWidget {
   final Album album;
+  final String baseUrl;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onRename;
 
   const _AlbumTile({
     required this.album,
+    required this.baseUrl,
     required this.onTap,
     required this.onDelete,
     required this.onRename,
@@ -313,7 +316,7 @@ class _AlbumTileState extends State<_AlbumTile> {
   @override
   Widget build(BuildContext context) {
     final firstThumb = widget.album.media.isNotEmpty
-        ? widget.album.media.first.thumbnailPath
+        ? widget.album.media.first.thumbnailUrl(widget.baseUrl)
         : null;
 
     final albumColor = Colors.primaries[widget.album.id % Colors.primaries.length];
