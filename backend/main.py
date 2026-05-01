@@ -334,7 +334,7 @@ def remove_media_from_album(
 # Debe ir al final para que las rutas de la API tengan prioridad.
 # Cualquier ruta no reconocida sirve index.html (la SPA maneja el ruteo).
 
-WEB_DIR = Path("/home/zimba/aura/frontend/build/web")
+WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "build" / "web"
 if WEB_DIR.exists():
 
     @app.get("/{full_path:path}")
