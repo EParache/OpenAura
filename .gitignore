@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Flutter / Dart
+.dart_tool/
+build/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.metadata
+.android/
+.ios/
+.macos/
+.windows/
+
+# DB and cache
+aura.db
+cache/thumbnails/*
+!cache/thumbnails/.gitkeep
+scanned_paths.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Env
+.env

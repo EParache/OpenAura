@@ -1,0 +1,145 @@
+"""Servicio de escaneo de directorios para indexar archivos multimedia."""
+
+from pathlib import Path
+from sqlalchemy.orm import Session
+from ..models import models
+from PIL import Image
+from PIL.ExifTags import TAGS
+from app.services import thumbnail_service
+from pillow_heif import register_heif_opener
+import datetime
+
+register_heif_opener()
+
+# Extensiones soportadas — la comparación se hace en minúsculas
+SUPPORTED_IMAGES = {'.jpg', '.jpeg', '.png', '.webp', '.heic'}
+SUPPORTED_VIDEOS = {'.mp4', '.mov', '.avi', '.mkv'}
+
+
+def get_image_metadata(path: Path) -> dict:
+    """Extrae metadata (dimensiones, formato, EXIF) de una imagen."""
+    metadata = {}
+    try:
+        with Image.open(path) as img:
+            metadata['width'], metadata['height'] = img.size
+            metadata['format'] = img.format
+            exif = img.getexif()
+            if exif:
+                for tag_id, value in exif.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    if isinstance(value, bytes):
+                        value = value.decode(errors='replace')
+                    metadata[f"exif_{tag}"] = str(value)
+    except Exception as e:
+        metadata['error'] = f"Could not extract EXIF: {str(e)}"
+    return metadata
+
+
+def scan_directory(db: Session, directory_path: str) -> dict:
+    """Escanea un directorio recursivamente e indexa archivos multimedia nuevos.
+
+    Args:
+        db: Sesión de SQLAlchemy.
+        directory_path: Ruta absoluta a la carpeta a escanear.
+
+    Returns:
+        dict con contadores: {added, skipped, errors}.
+    """
+    root_path = Path(directory_path)
+    if not root_path.exists():
+        return {"error": "Path does not exist"}
+
+    stats = {"added": 0, "skipped": 0, "errors": 0}
+    all_supported = SUPPORTED_IMAGES | SUPPORTED_VIDEOS
+
+    # Usamos rglob("*") para capturar archivos con cualquier capitalización de extensión
+    for file_path in root_path.rglob("*"):
+        if file_path.is_dir() or file_path.is_symlink():
+            continue
+
+        suffix = file_path.suffix.lower()
+        if suffix not in all_supported:
+            continue
+
+        # Verificar si ya está indexado
+        db_media = (
+            db.query(models.Media)
+            .filter(models.Media.path == str(file_path))
+            .first()
+        )
+        if db_media:
+            # Si la miniatura no existe, regenerarla (ej. caché limpiado)
+            thumb_file = (
+                thumbnail_service.CACHE_DIR / Path(db_media.thumbnail_path).name
+            ) if db_media.thumbnail_path else None
+            if db_media.type == 'image' and (
+                not thumb_file or not thumb_file.exists()
+            ):
+                db_media.thumbnail_path = (
+                    thumbnail_service.generate_thumbnail(str(file_path))
+                )
+                db_media.metadata_json = get_image_metadata(file_path)
+                stats["added"] += 1
+            else:
+                stats["skipped"] += 1
+            continue
+
+        try:
+            media_type = 'image' if suffix in SUPPORTED_IMAGES else 'video'
+            metadata = {}
+            thumb_path = None
+
+            if media_type == 'image':
+                metadata = get_image_metadata(file_path)
+                thumb_path = thumbnail_service.generate_thumbnail(str(file_path))
+
+            # Usar la fecha de modificación del archivo como created_at
+            try:
+                file_mtime = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+            except OSError:
+                file_mtime = datetime.datetime.utcnow()
+
+            new_media = models.Media(
+                title=file_path.stem,
+                path=str(file_path),
+                thumbnail_path=thumb_path,
+                type=media_type,
+                metadata_json=metadata,
+                created_at=file_mtime,
+            )
+            db.add(new_media)
+            stats["added"] += 1
+        except Exception:
+            stats["errors"] += 1
+
+    db.commit()
+    return stats
+
+
+def cleanup_missing(db: Session) -> dict:
+    """Elimina registros cuyos archivos ya no existen en disco.
+
+    También borra las miniaturas huérfanas del caché.
+
+    Returns:
+        dict con contador: {removed}.
+    """
+    all_media = db.query(models.Media).all()
+    removed = 0
+    for media in all_media:
+        if not Path(media.path).exists():
+            # Borrar miniatura asociada del caché
+            if media.thumbnail_path:
+                thumb_file = (
+                    Path(thumbnail_service.CACHE_DIR)
+                    / Path(media.thumbnail_path).name
+                )
+                try:
+                    thumb_file.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            # SQLAlchemy elimina automáticamente las filas en media_albums
+            db.delete(media)
+            removed += 1
+    db.commit()
+    return {"removed": removed}
