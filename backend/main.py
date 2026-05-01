@@ -39,7 +39,7 @@ app = FastAPI(
 
 # ── Persistencia de rutas escaneadas ────────────────────────────────────────
 
-SCAN_PATHS_FILE = Path("/home/zimba/aura/backend/scanned_paths.json")
+SCAN_PATHS_FILE = Path(__file__).resolve().parent / "scanned_paths.json"
 
 
 def _load_scan_paths() -> List[str]:
@@ -58,7 +58,7 @@ def _save_scan_path(path: str):
 
 # ── Archivos estáticos ───────────────────────────────────────────────────────
 
-THUMBS_DIR = Path("/home/zimba/aura/backend/cache/thumbnails")
+THUMBS_DIR = Path(__file__).resolve().parent / "cache" / "thumbnails"
 THUMBS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/thumbnails", StaticFiles(directory=str(THUMBS_DIR)), name="thumbnails")
 

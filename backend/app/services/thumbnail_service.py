@@ -7,7 +7,7 @@ import hashlib
 
 register_heif_opener()
 
-CACHE_DIR = Path("/home/zimba/aura/backend/cache/thumbnails")
+CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "cache" / "thumbnails"
 THUMBNAIL_SIZE = (400, 400)
 
 # Asegurar que el directorio de caché existe
