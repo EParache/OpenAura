@@ -35,6 +35,21 @@ def get_image_metadata(path: Path) -> dict:
     return metadata
 
 
+def get_exif_date(metadata: dict) -> datetime.datetime | None:
+    """Extrae la fecha de captura desde los metadatos EXIF."""
+    date_keys = ['exif_DateTimeOriginal', 'exif_DateTimeDigitized', 'exif_DateTime']
+    for key in date_keys:
+        value = metadata.get(key)
+        if not value:
+            continue
+        for fmt in ('%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y:%m:%d %H:%M:%S'):
+            try:
+                return datetime.datetime.strptime(str(value).strip(), fmt)
+            except ValueError:
+                continue
+    return None
+
+
 def scan_directory(db: Session, directory_path: str) -> dict:
     """Escanea un directorio recursivamente e indexa archivos multimedia nuevos.
 
@@ -102,11 +117,13 @@ def scan_directory(db: Session, directory_path: str) -> dict:
             else:
                 thumb_path = thumbnail_service.generate_video_thumbnail(str(file_path))
 
-            # Usar la fecha de modificación del archivo como created_at
+            # Usar fecha EXIF si esta disponible, sino la de modificacion del archivo
             try:
                 file_mtime = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
             except OSError:
                 file_mtime = datetime.datetime.utcnow()
+            exif_date = get_exif_date(metadata)
+            created_at = exif_date if exif_date else file_mtime
 
             new_media = models.Media(
                 title=file_path.stem,
@@ -114,7 +131,7 @@ def scan_directory(db: Session, directory_path: str) -> dict:
                 thumbnail_path=thumb_path,
                 type=media_type,
                 metadata_json=metadata,
-                created_at=file_mtime,
+                created_at=created_at,
             )
             db.add(new_media)
             stats["added"] += 1
