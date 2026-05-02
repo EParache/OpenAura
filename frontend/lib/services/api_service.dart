@@ -51,6 +51,14 @@ class ApiService {
     throw Exception(detail);
   }
 
+  Future<void> deleteMedia(int id) async {
+    final response = await _client.delete(Uri.parse('$baseUrl/media/$id'));
+    if (response.statusCode == 200) return;
+    final detail =
+        (jsonDecode(response.body) as Map<String, dynamic>)['detail'] ?? 'Error desconocido';
+    throw Exception(detail);
+  }
+
   Future<Map<String, dynamic>> getHostInfo() async {
     final response = await _client.get(Uri.parse('$baseUrl/host-info'));
     if (response.statusCode == 200) {

@@ -258,31 +258,6 @@ class _Header extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: scanning
-                  ? const Padding(
-                      padding: EdgeInsets.only(right: 4),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : Tooltip(
-                      message: 'Re-escanear',
-                      waitDuration: const Duration(milliseconds: 500),
-                      child: IconButton(
-                        key: const ValueKey('rescan_btn'),
-                        icon: const Icon(Icons.refresh_rounded, size: 22),
-                        onPressed: onRescan,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        color: const Color(0xFF999999),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 12),
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,

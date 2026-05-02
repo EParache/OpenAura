@@ -20,6 +20,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   late String _currentPath;
   late String _displayName;
   bool _saving = false;
+  bool _deleting = false;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   bool _showFullImage = false;
@@ -73,6 +74,66 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         date.year, date.month, date.day, time.hour, time.minute,
       );
     });
+  }
+
+  Future<void> _delete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.red, size: 22),
+            SizedBox(width: 8),
+            Text('Eliminar archivo'),
+          ],
+        ),
+        content: Text('Estas seguro de eliminar "${_displayName}"?\n\n'
+            'El archivo se borrara permanentemente del disco.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await widget.api.deleteMedia(widget.media.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${_displayName}" eliminado'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -389,6 +450,38 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: _deleting || _saving ? null : _delete,
+                icon: _deleting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.red,
+                        ),
+                      )
+                    : const Icon(Icons.delete_outline, size: 17, color: Colors.red),
+                label: Text(
+                  _deleting ? 'Eliminando...' : 'Eliminar',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
