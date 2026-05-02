@@ -70,7 +70,7 @@ class _MenuButton extends StatelessWidget {
         height: 70,
         color: const Color(0xFF4A4A4A),
         child: const Center(
-          child: Icon(Icons.menu, color: Colors.white, size: 24),
+          child: Icon(Icons.menu, color: Colors.white, size: 26),
         ),
       ),
     );
@@ -147,7 +147,7 @@ class _GearMenu extends StatelessWidget {
         ),
         child: const Icon(
           Icons.settings_rounded,
-          size: 22,
+          size: 24,
           color: AuraSidebar._inactiveIcon,
         ),
       ),
@@ -194,7 +194,7 @@ class _NavIcon extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 22,
+                size: 24,
                 color: selected ? AuraSidebar._accent : AuraSidebar._inactiveIcon,
               ),
             ),
