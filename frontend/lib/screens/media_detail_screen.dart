@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../models/media.dart';
 import '../services/api_service.dart';
 
@@ -21,10 +22,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   late String _displayName;
   bool _saving = false;
   bool _deleting = false;
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
   bool _showFullImage = false;
   bool _panelExpanded = true;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  VideoPlayerController? _videoController;
 
   @override
   void initState() {
@@ -44,6 +46,19 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       curve: Curves.easeIn,
     );
     _fadeController.forward();
+
+    if (widget.media.type == 'video') {
+      _initVideo();
+    }
+  }
+
+  void _initVideo() {
+    _videoController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.media.fileUrl(widget.api.baseUrl)),
+    );
+    _videoController!.initialize().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -51,6 +66,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _titleController.dispose();
     _filenameController.dispose();
     _fadeController.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
 
@@ -291,6 +307,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   Widget _buildPreviewArea() {
+    if (widget.media.type == 'video') {
+      return _buildVideoPreview();
+    }
+
     return GestureDetector(
       onTap: () => setState(() => _showFullImage = !_showFullImage),
       child: Container(
@@ -306,22 +326,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                   child: _buildMediaContent(),
                 ),
               ),
-              if (widget.media.type == 'video')
-                Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(180),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      size: 44,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
               if (!_showFullImage)
                 Positioned(
                   bottom: 12,
@@ -343,6 +347,132 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildVideoPreview() {
+    final controller = _videoController;
+    if (controller == null || !controller.value.isInitialized) {
+      return Container(
+        color: const Color(0xFF1A1A1A),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.white70),
+              SizedBox(height: 16),
+              Text('Cargando video...',
+                  style: TextStyle(color: Colors.white54, fontSize: 14)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          controller.value.isPlaying
+              ? controller.pause()
+              : controller.play();
+        });
+      },
+      child: Container(
+        color: const Color(0xFF1A1A1A),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(
+              child: AspectRatio(
+                aspectRatio: controller.value.aspectRatio,
+                child: VideoPlayer(controller),
+              ),
+            ),
+            if (!controller.value.isPlaying)
+              Center(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(180),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 48,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ),
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: _buildVideoControls(controller),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoControls(VideoPlayerController controller) {
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(
+            controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+            color: Colors.white,
+            size: 28,
+          ),
+          onPressed: () {
+            setState(() {
+              controller.value.isPlaying
+                  ? controller.pause()
+                  : controller.play();
+            });
+          },
+        ),
+        Expanded(
+          child: VideoProgressIndicator(
+            controller,
+            allowScrubbing: true,
+            colors: const VideoProgressColors(
+              playedColor: Color(0xFFD81B60),
+              bufferedColor: Colors.white24,
+              backgroundColor: Colors.white12,
+            ),
+          ),
+        ),
+        Text(
+          _formatDuration(controller.value.position),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        const Text(' / ', style: TextStyle(color: Colors.white38, fontSize: 12)),
+        Text(
+          _formatDuration(controller.value.duration),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: Icon(
+            controller.value.volume > 0 ? Icons.volume_up : Icons.volume_off,
+            color: Colors.white70,
+            size: 20,
+          ),
+          onPressed: () {
+            setState(() {
+              controller.setVolume(controller.value.volume > 0 ? 0.0 : 1.0);
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final min = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final sec = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$min:$sec';
   }
 
   Widget _buildMediaContent() {
