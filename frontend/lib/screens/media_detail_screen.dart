@@ -401,26 +401,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 4),
-          if (widget.allMedia != null &&
-              widget.currentIndex != null &&
-              widget.currentIndex! > 0)
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded, size: 24),
-              tooltip: 'Anterior',
-              onPressed: _goToPrev,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            ),
-          if (widget.allMedia != null &&
-              widget.currentIndex != null &&
-              widget.currentIndex! < widget.allMedia!.length - 1)
-            IconButton(
-              icon: const Icon(Icons.chevron_right_rounded, size: 24),
-              tooltip: 'Siguiente',
-              onPressed: _goToNext,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            ),
           if (widget.media.format != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -514,6 +494,30 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     ),
                   ),
                 ),
+              if (widget.allMedia != null &&
+                  widget.currentIndex != null &&
+                  widget.currentIndex! > 0)
+                Positioned(
+                  left: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: _buildNavArrow(
+                    icon: Icons.chevron_left_rounded,
+                    onTap: _goToPrev,
+                  ),
+                ),
+              if (widget.allMedia != null &&
+                  widget.currentIndex != null &&
+                  widget.currentIndex! < widget.allMedia!.length - 1)
+                Positioned(
+                  right: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: _buildNavArrow(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: _goToNext,
+                  ),
+                ),
               if (_slideshowActive)
                 Positioned(
                   bottom: 12,
@@ -538,6 +542,31 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavArrow({required IconData icon, required VoidCallback onTap}) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(80),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 28,
+              color: Colors.white.withAlpha(160),
+            ),
           ),
         ),
       ),
