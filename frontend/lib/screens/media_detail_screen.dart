@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/media.dart';
 import '../services/api_service.dart';
 
@@ -60,7 +61,20 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       if (mounted) setState(() {});
     }).catchError((e) {
       debugPrint('Error inicializando video: $e');
+      _videoController?.dispose();
+      _videoController = null;
       if (mounted) setState(() {});
+    });
+
+    // Timeout de seguridad: si no inicializa en 10s, mostrar fallback
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted &&
+          _videoController != null &&
+          !_videoController!.value.isInitialized) {
+        _videoController?.dispose();
+        _videoController = null;
+        setState(() {});
+      }
     });
   }
 
@@ -196,6 +210,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Error abriendo URL: $e');
     }
   }
 
@@ -376,37 +399,50 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     }
 
     if (hasError) {
+      final videoUrl = widget.media.fileUrl(widget.api.baseUrl);
       return Container(
         color: const Color(0xFF1A1A1A),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.videocam_off, size: 64, color: Colors.white.withAlpha(60)),
+              Icon(Icons.videocam, size: 64, color: Colors.white.withAlpha(80)),
               const SizedBox(height: 16),
               Text(
-                'No se pudo reproducir el video',
-                style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 15),
+                widget.media.displayName,
+                style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 15),
               ),
               const SizedBox(height: 8),
               Text(
-                'El formato puede no ser compatible con el navegador',
-                style: TextStyle(color: Colors.white.withAlpha(80), fontSize: 12),
+                'El navegador no puede reproducir este formato',
+                style: TextStyle(color: Colors.white.withAlpha(100), fontSize: 12),
               ),
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () {
-                  // Re-intentar
-                  _videoController?.dispose();
-                  _videoController = null;
-                  _initVideo();
-                },
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Reintentar'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: Colors.white.withAlpha(40)),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => _initVideo(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reintentar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: BorderSide(color: Colors.white.withAlpha(40)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: () {
+                      // Abrir en el navegador directamente
+                      _launchUrl(videoUrl);
+                    },
+                    icon: const Icon(Icons.open_in_browser, size: 16),
+                    label: const Text('Abrir video'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD81B60),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

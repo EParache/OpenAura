@@ -12,6 +12,7 @@ Endpoints principales:
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pathlib import Path
 from app.core.database import engine, get_db, Base
@@ -35,6 +36,13 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="AURA API",
     description="Acervo Unificado de Recursos Audiovisuales",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Persistencia de rutas escaneadas ────────────────────────────────────────
