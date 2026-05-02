@@ -1,5 +1,6 @@
 """Servicio de generación de miniaturas para imágenes y videos."""
 
+import shutil
 import subprocess
 from pathlib import Path
 from PIL import Image
@@ -8,11 +9,25 @@ import hashlib
 
 register_heif_opener()
 
+_FFMPEG_AVAILABLE = None
+
+
+def _check_ffmpeg():
+    global _FFMPEG_AVAILABLE
+    if _FFMPEG_AVAILABLE is None:
+        _FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
+        if not _FFMPEG_AVAILABLE:
+            import warnings
+            warnings.warn("ffmpeg not found in PATH. Video thumbnail generation will be disabled.")
+
+
 CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "cache" / "thumbnails"
 THUMBNAIL_SIZE = (400, 400)
 
 # Asegurar que el directorio de caché existe
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+_check_ffmpeg()
 
 
 def generate_thumbnail(media_path: str) -> str | None:

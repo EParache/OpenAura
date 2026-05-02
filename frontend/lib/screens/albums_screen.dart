@@ -338,7 +338,7 @@ class _AlbumTileState extends State<_AlbumTile> {
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _hovered ? albumColor.withAlpha(80) : const Color(0xFFE0E0E0),
+              color: _hovered ? albumColor.withAlpha(80) : Theme.of(context).dividerColor,
             ),
             boxShadow: _hovered
                 ? [

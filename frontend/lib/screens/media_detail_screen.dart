@@ -34,10 +34,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   bool _deleting = false;
   bool _showFullImage = false;
   bool _panelExpanded = false;
+  bool _showExif = false;
+  bool _slideshowActive = false;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   VideoPlayerController? _videoController;
   Timer? _videoTimeout;
+  Timer? _slideshowTimer;
 
   @override
   void initState() {
@@ -96,7 +99,49 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _fadeController.dispose();
     _videoTimeout?.cancel();
     _videoController?.dispose();
+    _slideshowTimer?.cancel();
     super.dispose();
+  }
+
+  void _startSlideshow() {
+    if (widget.allMedia == null || widget.currentIndex == null) return;
+    setState(() => _slideshowActive = true);
+    _slideshowTimer?.cancel();
+    _slideshowTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      final list = widget.allMedia!;
+      final idx = widget.currentIndex!;
+      if (idx >= list.length - 1) {
+        _goToIndex(0);
+      } else {
+        _goToIndex(idx + 1);
+      }
+    });
+  }
+
+  void _stopSlideshow() {
+    _slideshowTimer?.cancel();
+    if (mounted) setState(() => _slideshowActive = false);
+  }
+
+  void _goToIndex(int targetIndex) {
+    final list = widget.allMedia;
+    if (list == null) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (_, __, ___) => MediaDetailScreen(
+          media: list[targetIndex],
+          api: widget.api,
+          allMedia: list,
+          currentIndex: targetIndex,
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -133,7 +178,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             Text('Eliminar archivo'),
           ],
         ),
-        content: Text('Estas seguro de eliminar "${_displayName}"?\n\n'
+        content: Text('Estas seguro de eliminar "$_displayName"?\n\n'
             'El archivo se borrara permanentemente del disco.'),
         actions: [
           TextButton(
@@ -162,7 +207,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('"${_displayName}" eliminado'),
+          content: Text('"$_displayName" eliminado'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),
@@ -411,6 +456,23 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               ),
             ),
           ),
+          const Spacer(),
+          if (widget.allMedia != null && widget.currentIndex != null)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: _slideshowActive ? _stopSlideshow : _startSlideshow,
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    _slideshowActive ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                    size: 20,
+                    color: _slideshowActive ? const Color(0xFFD81B60) : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -449,6 +511,29 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     child: const Text(
                       'Click para expandir',
                       style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ),
+                ),
+              if (_slideshowActive)
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD81B60).withAlpha(200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.slideshow, size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Slideshow${widget.allMedia != null && widget.currentIndex != null ? "  ${widget.currentIndex! + 1}/${widget.allMedia!.length}" : ""}',
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -844,6 +929,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   Widget _metadataCard() {
+    final exifEntries = _getExifEntries();
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -863,9 +949,91 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             _metaDivider(),
           ],
           _metaRow('Ruta', _currentPath, Icons.folder_outlined, multiLine: true),
+          if (exifEntries.isNotEmpty) ...[
+            _metaDivider(),
+            InkWell(
+              onTap: () => setState(() => _showExif = !_showExif),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.camera_alt_outlined, size: 17, color: Color(0xFFD81B60)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Datos EXIF',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _showExif ? 'Ocultar' : 'Ver EXIF',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFFD81B60), fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _showExif ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: const Color(0xFFD81B60),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_showExif)
+              for (int i = 0; i < exifEntries.length; i++) ...[
+                if (i > 0) _metaDivider(),
+                _metaRow(exifEntries[i].label, exifEntries[i].value, exifEntries[i].icon),
+              ],
+          ],
         ],
       ),
     );
+  }
+
+  List<_ExifEntry> _getExifEntries() {
+    final meta = widget.media.metadataJson;
+    if (meta == null) return [];
+
+    final exifFields = {
+      'exif_Make': _ExifMapping('Cámara', Icons.camera),
+      'exif_Model': _ExifMapping('Modelo', Icons.smartphone),
+      'exif_DateTime': _ExifMapping('Fecha EXIF', Icons.date_range),
+      'exif_ISOSpeedRatings': _ExifMapping('ISO', Icons.iso),
+      'exif_FNumber': _ExifMapping('Apertura', Icons.photo_camera),
+      'exif_ExposureTime': _ExifMapping('Exposición', Icons.timer),
+      'exif_FocalLength': _ExifMapping('Distancia focal', Icons.center_focus_strong),
+      'exif_Flash': _ExifMapping('Flash', Icons.flash_on),
+      'exif_LensModel': _ExifMapping('Lente', Icons.lens),
+    };
+
+    final entries = <_ExifEntry>[];
+    for (final entry in exifFields.entries) {
+      final value = meta[entry.key];
+      if (value != null) {
+        String displayValue = value.toString();
+        if (entry.key == 'exif_FNumber') {
+          displayValue = 'f/$displayValue';
+        } else if (entry.key == 'exif_ExposureTime') {
+          displayValue = '$displayValue s';
+        } else if (entry.key == 'exif_FocalLength') {
+          displayValue = '$displayValue mm';
+        } else if (entry.key == 'exif_Flash') {
+          displayValue = displayValue == '0' || displayValue == 'false' ? 'No' : 'Sí';
+        } else if (entry.key == 'exif_ISOSpeedRatings') {
+          displayValue = 'ISO $displayValue';
+        }
+        entries.add(_ExifEntry(
+          label: entry.value.label,
+          value: displayValue,
+          icon: entry.value.icon,
+        ));
+      }
+    }
+    return entries;
   }
 
   Widget _metaRow(String label, String value, IconData icon,
@@ -897,4 +1065,17 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   Widget _metaDivider() {
     return Divider(height: 1, color: Colors.grey.shade200);
   }
+}
+
+class _ExifMapping {
+  final String label;
+  final IconData icon;
+  const _ExifMapping(this.label, this.icon);
+}
+
+class _ExifEntry {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _ExifEntry({required this.label, required this.value, required this.icon});
 }

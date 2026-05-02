@@ -287,12 +287,12 @@ class _HeaderState extends State<_Header> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
-            const Text(
+            Text(
               'OPEN AURA',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
+                color: Theme.of(context).textTheme.titleLarge?.color,
                 letterSpacing: 1,
               ),
             ),
@@ -353,18 +353,18 @@ class _HeaderState extends State<_Header> {
               children: [
                 Text(
                   widget.hostname,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF555555),
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                   ),
                 ),
                 Text(
                   widget.username,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFFAAAAAA),
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ],

@@ -1,9 +1,12 @@
 """Configuración de la base de datos SQLite con SQLAlchemy."""
 
+from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./aura.db"
+DB_PATH = Path(__file__).resolve().parent.parent / "aura.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

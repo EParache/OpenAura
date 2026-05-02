@@ -306,11 +306,11 @@ class _MediaTileState extends State<_MediaTile> {
 
   Widget _placeholder() {
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: Theme.of(context).disabledColor.withAlpha(30),
       child: Center(
         child: widget.media.type == 'video'
-            ? const Icon(Icons.videocam, size: 40, color: Color(0xFFBBBBBB))
-            : const Icon(Icons.image, size: 40, color: Color(0xFFBBBBBB)),
+            ? Icon(Icons.videocam, size: 40, color: Theme.of(context).disabledColor)
+            : Icon(Icons.image, size: 40, color: Theme.of(context).disabledColor),
       ),
     );
   }
