@@ -109,6 +109,29 @@ class _HomeScreenState extends State<HomeScreen> {
     _openScanDialog(context);
   }
 
+  Future<void> _regenerateThumbnails() async {
+    try {
+      final result = await _api.regenerateThumbnails();
+      if (!mounted) return;
+      final total = result['total'] ?? 0;
+      final ok = result['regenerated'] ?? 0;
+      final errors = result['errors'] ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$ok/$total miniaturas regeneradas${errors > 0 ? " ($errors errores)" : ""}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _refreshKey++;
+      _buildScreens();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      );
+    }
+  }
+
   void _onSettingsTap() {
     _openSettings(context);
   }
@@ -124,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onChanged: _onSidebarChanged,
             onRescan: _rescan,
             onScan: _onScanTap,
+            onRegenerate: _regenerateThumbnails,
             onSettings: _onSettingsTap,
           ),
           Expanded(

@@ -110,8 +110,36 @@ def trigger_rescan(db: Session = Depends(get_db)):
 
 @app.get("/scan-paths", response_model=List[str])
 def list_scan_paths():
-    """Lista las rutas de carpetas escaneadas previamente."""
     return _load_scan_paths()
+
+
+@app.post("/regenerate-thumbnails")
+def regenerate_thumbnails(db: Session = Depends(get_db)):
+    """Regenera todas las miniaturas desde cero."""
+    all_media = db.query(models.Media).all()
+    total = len(all_media)
+    regenerated = 0
+    errors = 0
+
+    for media in all_media:
+        try:
+            file_path = Path(media.path)
+            if not file_path.exists():
+                continue
+            if media.type == 'image':
+                new_thumb = thumbnail_service.generate_thumbnail(str(file_path))
+            else:
+                new_thumb = thumbnail_service.generate_video_thumbnail(str(file_path))
+            if new_thumb:
+                media.thumbnail_path = new_thumb
+                if media.type == 'image':
+                    media.metadata_json = scanner.get_image_metadata(file_path)
+                regenerated += 1
+        except Exception:
+            errors += 1
+
+    db.commit()
+    return {"total": total, "regenerated": regenerated, "errors": errors}
 
 
 @app.get("/host-info")

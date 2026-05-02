@@ -5,6 +5,7 @@ class AuraSidebar extends StatefulWidget {
   final ValueChanged<int> onChanged;
   final VoidCallback onRescan;
   final VoidCallback onScan;
+  final VoidCallback onRegenerate;
   final VoidCallback onSettings;
 
   static const _accent = Color(0xFFD81B60);
@@ -18,6 +19,7 @@ class AuraSidebar extends StatefulWidget {
     required this.onChanged,
     required this.onRescan,
     required this.onScan,
+    required this.onRegenerate,
     required this.onSettings,
   });
 
@@ -76,6 +78,7 @@ class _AuraSidebarState extends State<AuraSidebar> {
                     expanded: _expanded,
                     onRescan: widget.onRescan,
                     onScan: widget.onScan,
+                    onRegenerate: widget.onRegenerate,
                     onSettings: widget.onSettings,
                   ),
                   const SizedBox(height: 12),
@@ -203,12 +206,14 @@ class _GearMenu extends StatelessWidget {
   final bool expanded;
   final VoidCallback onRescan;
   final VoidCallback onScan;
+  final VoidCallback onRegenerate;
   final VoidCallback onSettings;
 
   const _GearMenu({
     required this.expanded,
     required this.onRescan,
     required this.onScan,
+    required this.onRegenerate,
     required this.onSettings,
   });
 
@@ -222,6 +227,9 @@ class _GearMenu extends StatelessWidget {
             break;
           case 'scan':
             onScan();
+            break;
+          case 'regenerate':
+            onRegenerate();
             break;
           case 'settings':
             onSettings();
@@ -248,6 +256,17 @@ class _GearMenu extends StatelessWidget {
               Icon(Icons.folder_open_rounded, size: 20, color: Color(0xFF666666)),
               SizedBox(width: 10),
               Text('Escanear carpeta', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'regenerate',
+          child: Row(
+            children: [
+              Icon(Icons.auto_fix_high_rounded, size: 20, color: Color(0xFF666666)),
+              SizedBox(width: 10),
+              Text('Regenerar miniaturas', style: TextStyle(fontSize: 14)),
             ],
           ),
         ),

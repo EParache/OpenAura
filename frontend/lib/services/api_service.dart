@@ -71,6 +71,14 @@ class ApiService {
     throw Exception(detail);
   }
 
+  Future<Map<String, dynamic>> regenerateThumbnails() async {
+    final response = await _client.post(Uri.parse('$baseUrl/regenerate-thumbnails'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Error al regenerar miniaturas');
+  }
+
   Future<void> deleteMedia(int id) async {
     final response = await _client.delete(Uri.parse('$baseUrl/media/$id'));
     if (response.statusCode == 200) return;
