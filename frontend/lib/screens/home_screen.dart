@@ -120,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen> {
           AuraSidebar(
             selectedIndex: _selectedIndex,
             onChanged: _onSidebarChanged,
-            onMenuTap: _rescan,
             onRescan: _rescan,
             onScan: _onScanTap,
             onSettings: _onSettingsTap,

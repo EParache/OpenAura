@@ -1,57 +1,81 @@
 import 'package:flutter/material.dart';
 
-class AuraSidebar extends StatelessWidget {
+class AuraSidebar extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
-  final VoidCallback onMenuTap;
   final VoidCallback onRescan;
   final VoidCallback onScan;
   final VoidCallback onSettings;
 
   static const _accent = Color(0xFFD81B60);
   static const _inactiveIcon = Color(0xFF757575);
+  static const collapsedWidth = 70.0;
+  static const expandedWidth = 200.0;
 
   const AuraSidebar({
     super.key,
     required this.selectedIndex,
     required this.onChanged,
-    required this.onMenuTap,
     required this.onRescan,
     required this.onScan,
     required this.onSettings,
   });
 
   @override
+  State<AuraSidebar> createState() => _AuraSidebarState();
+}
+
+class _AuraSidebarState extends State<AuraSidebar> {
+  bool _expanded = false;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 70,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      width: _expanded ? AuraSidebar.expandedWidth : AuraSidebar.collapsedWidth,
       decoration: const BoxDecoration(
         color: Color(0xFFF8F9FA),
         border: Border(right: BorderSide(color: Color(0xFFE0E0E0))),
       ),
       child: Column(
         children: [
-          _MenuButton(onTap: onMenuTap),
-          const SizedBox(height: 20),
-          _NavIcon(
-            icon: Icons.home_rounded,
-            tooltip: 'Galeria',
-            selected: selectedIndex == 0,
-            onTap: () => onChanged(0),
-          ),
-          _NavIcon(
-            icon: Icons.photo_album_rounded,
-            tooltip: 'Albumes',
-            selected: selectedIndex == 1,
-            onTap: () => onChanged(1),
-          ),
-          const Spacer(),
-          _GearMenu(
-            onRescan: onRescan,
-            onScan: onScan,
-            onSettings: onSettings,
-          ),
+          _MenuButton(expanded: _expanded, onTap: _toggle),
           const SizedBox(height: 16),
+          Expanded(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: 1.0,
+              child: Column(
+                children: [
+                  _NavItem(
+                    icon: Icons.home_rounded,
+                    label: 'Galeria',
+                    selected: widget.selectedIndex == 0,
+                    expanded: _expanded,
+                    onTap: () => widget.onChanged(0),
+                  ),
+                  _NavItem(
+                    icon: Icons.photo_album_rounded,
+                    label: 'Albumes',
+                    selected: widget.selectedIndex == 1,
+                    expanded: _expanded,
+                    onTap: () => widget.onChanged(1),
+                  ),
+                  const Spacer(),
+                  _GearMenu(
+                    expanded: _expanded,
+                    onRescan: widget.onRescan,
+                    onScan: widget.onScan,
+                    onSettings: widget.onSettings,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -59,8 +83,10 @@ class AuraSidebar extends StatelessWidget {
 }
 
 class _MenuButton extends StatelessWidget {
+  final bool expanded;
   final VoidCallback onTap;
-  const _MenuButton({required this.onTap});
+
+  const _MenuButton({required this.expanded, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +95,97 @@ class _MenuButton extends StatelessWidget {
       child: Container(
         height: 48,
         color: const Color(0xFF4A4A4A),
-        child: const Center(
-          child: Icon(Icons.menu, color: Colors.white, size: 26),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, animation) {
+              return RotationTransition(
+                turns: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: Icon(
+              expanded ? Icons.menu_open_rounded : Icons.menu_rounded,
+              key: ValueKey(expanded),
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.symmetric(
+              horizontal: expanded ? 16 : 0,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: selected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: selected
+                  ? [const BoxShadow(color: Color(0x0D000000), blurRadius: 4)]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: selected
+                        ? AuraSidebar._accent
+                        : AuraSidebar._inactiveIcon,
+                  ),
+                ),
+                if (expanded) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        color: selected
+                            ? AuraSidebar._accent
+                            : const Color(0xFF555555),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -78,11 +193,13 @@ class _MenuButton extends StatelessWidget {
 }
 
 class _GearMenu extends StatelessWidget {
+  final bool expanded;
   final VoidCallback onRescan;
   final VoidCallback onScan;
   final VoidCallback onSettings;
 
   const _GearMenu({
+    required this.expanded,
     required this.onRescan,
     required this.onScan,
     required this.onSettings,
@@ -104,7 +221,7 @@ class _GearMenu extends StatelessWidget {
             break;
         }
       },
-      offset: const Offset(60, 0),
+      offset: Offset(expanded ? 190 : 60, 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => [
         const PopupMenuItem(
@@ -139,66 +256,37 @@ class _GearMenu extends StatelessWidget {
           ),
         ),
       ],
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          horizontal: expanded ? 16 : 0,
+          vertical: 8,
         ),
-        child: const Icon(
-          Icons.settings_rounded,
-          size: 24,
-          color: AuraSidebar._inactiveIcon,
-        ),
-      ),
-    );
-  }
-}
-
-class _NavIcon extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavIcon({
-    required this.icon,
-    required this.tooltip,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Tooltip(
-        message: tooltip,
-        preferBelow: false,
-        waitDuration: const Duration(milliseconds: 500),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: selected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: selected
-                    ? [const BoxShadow(color: Color(0x0D000000), blurRadius: 4)]
-                    : null,
-              ),
               child: Icon(
-                icon,
+                Icons.settings_rounded,
                 size: 24,
-                color: selected ? AuraSidebar._accent : AuraSidebar._inactiveIcon,
+                color: AuraSidebar._inactiveIcon,
               ),
             ),
-          ),
+            if (expanded) ...[
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Ajustes',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF555555),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
