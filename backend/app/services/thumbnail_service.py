@@ -1,5 +1,6 @@
-"""Servicio de generación de miniaturas para imágenes."""
+"""Servicio de generación de miniaturas para imágenes y videos."""
 
+import subprocess
 from pathlib import Path
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -51,3 +52,45 @@ def generate_thumbnail(media_path: str) -> str | None:
     except Exception as e:
         print(f"Error generando miniatura para {media_path}: {e}")
         return None
+
+
+def generate_video_thumbnail(media_path: str) -> str | None:
+    """Genera una miniatura JPEG para un video extrayendo un frame con ffmpeg.
+
+    Args:
+        media_path: Ruta absoluta al archivo de video.
+
+    Returns:
+        Ruta URL relativa a la miniatura o None si ocurre un error.
+    """
+    path = Path(media_path)
+    if not path.exists():
+        return None
+
+    file_hash = hashlib.md5(str(path).encode()).hexdigest()
+    thumb_filename = f"{file_hash}.jpg"
+    thumb_path = CACHE_DIR / thumb_filename
+
+    if thumb_path.exists():
+        return f"/thumbnails/{thumb_filename}"
+
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-ss", "00:00:01",
+                "-i", str(path),
+                "-vframes", "1",
+                "-vf", f"scale={THUMBNAIL_SIZE[0]}:{THUMBNAIL_SIZE[1]}:force_original_aspect_ratio=decrease,pad={THUMBNAIL_SIZE[0]}:{THUMBNAIL_SIZE[1]}:(ow-iw)/2:(oh-ih)/2",
+                "-q:v", "3",
+                "-y",
+                str(thumb_path),
+            ],
+            capture_output=True,
+            timeout=30,
+        )
+        if result.returncode == 0 and thumb_path.exists():
+            return f"/thumbnails/{thumb_filename}"
+    except Exception as e:
+        print(f"Error generando miniatura de video para {media_path}: {e}")
+    return None

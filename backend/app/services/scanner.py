@@ -68,17 +68,21 @@ def scan_directory(db: Session, directory_path: str) -> dict:
             .first()
         )
         if db_media:
-            # Si la miniatura no existe, regenerarla (ej. caché limpiado)
+            # Si la miniatura no existe, regenerarla (ej. cache limpiado)
             thumb_file = (
                 thumbnail_service.CACHE_DIR / Path(db_media.thumbnail_path).name
             ) if db_media.thumbnail_path else None
-            if db_media.type == 'image' and (
-                not thumb_file or not thumb_file.exists()
-            ):
-                db_media.thumbnail_path = (
-                    thumbnail_service.generate_thumbnail(str(file_path))
-                )
-                db_media.metadata_json = get_image_metadata(file_path)
+            needs_thumb = not thumb_file or not thumb_file.exists()
+            if needs_thumb:
+                if db_media.type == 'image':
+                    db_media.thumbnail_path = (
+                        thumbnail_service.generate_thumbnail(str(file_path))
+                    )
+                    db_media.metadata_json = get_image_metadata(file_path)
+                else:
+                    db_media.thumbnail_path = (
+                        thumbnail_service.generate_video_thumbnail(str(file_path))
+                    )
                 stats["added"] += 1
             else:
                 stats["skipped"] += 1
@@ -92,6 +96,8 @@ def scan_directory(db: Session, directory_path: str) -> dict:
             if media_type == 'image':
                 metadata = get_image_metadata(file_path)
                 thumb_path = thumbnail_service.generate_thumbnail(str(file_path))
+            else:
+                thumb_path = thumbnail_service.generate_video_thumbnail(str(file_path))
 
             # Usar la fecha de modificación del archivo como created_at
             try:

@@ -162,6 +162,23 @@ def serve_media_file(media_id: int, db: Session = Depends(get_db)):
         except Exception:
             return FileResponse(file_path)
 
+    if suffix in ('.mov', '.avi', '.mkv'):
+        try:
+            import subprocess
+            import tempfile
+            out = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
+            out.close()
+            subprocess.run(
+                ["ffmpeg", "-i", str(file_path), "-c:v", "libx264",
+                 "-preset", "ultrafast", "-crf", "28", "-c:a", "aac",
+                 "-movflags", "faststart", "-y", out.name],
+                capture_output=True, timeout=60,
+            )
+            return FileResponse(out.name, media_type='video/mp4',
+                               filename=file_path.stem + '.mp4')
+        except Exception:
+            return FileResponse(file_path)
+
     return FileResponse(file_path)
 
 
