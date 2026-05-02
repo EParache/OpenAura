@@ -8,8 +8,16 @@ import '../services/api_service.dart';
 class MediaDetailScreen extends StatefulWidget {
   final Media media;
   final ApiService api;
+  final List<Media>? allMedia;
+  final int? currentIndex;
 
-  const MediaDetailScreen({super.key, required this.media, required this.api});
+  const MediaDetailScreen({
+    super.key,
+    required this.media,
+    required this.api,
+    this.allMedia,
+    this.currentIndex,
+  });
 
   @override
   State<MediaDetailScreen> createState() => _MediaDetailScreenState();
@@ -173,6 +181,66 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     }
   }
 
+  void _goToPrev() {
+    final list = widget.allMedia;
+    final idx = widget.currentIndex;
+    if (list == null || idx == null || idx <= 0) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (_, __, ___) => MediaDetailScreen(
+          media: list[idx - 1],
+          api: widget.api,
+          allMedia: list,
+          currentIndex: idx - 1,
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(-0.3, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation, curve: Curves.easeOut,
+            )),
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+      ),
+    );
+  }
+
+  void _goToNext() {
+    final list = widget.allMedia;
+    final idx = widget.currentIndex;
+    if (list == null || idx == null || idx >= list.length - 1) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (_, __, ___) => MediaDetailScreen(
+          media: list[idx + 1],
+          api: widget.api,
+          allMedia: list,
+          currentIndex: idx + 1,
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.3, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation, curve: Curves.easeOut,
+            )),
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
@@ -288,17 +356,26 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              _displayName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          if (widget.allMedia != null &&
+              widget.currentIndex != null &&
+              widget.currentIndex! > 0)
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, size: 24),
+              tooltip: 'Anterior',
+              onPressed: _goToPrev,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
             ),
-          ),
+          if (widget.allMedia != null &&
+              widget.currentIndex != null &&
+              widget.currentIndex! < widget.allMedia!.length - 1)
+            IconButton(
+              icon: const Icon(Icons.chevron_right_rounded, size: 24),
+              tooltip: 'Siguiente',
+              onPressed: _goToNext,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+            ),
           if (widget.media.format != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

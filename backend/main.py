@@ -13,7 +13,7 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from pathlib import Path
 from app.core.database import engine, get_db, Base
 from app.models import models
@@ -126,15 +126,17 @@ def host_info():
 # ── Media ────────────────────────────────────────────────────────────────────
 
 @app.get("/media", response_model=List[schemas.Media])
-def list_media(skip: int = 0, limit: int = 500, db: Session = Depends(get_db)):
-    """Lista los archivos multimedia indexados, ordenados por fecha descendente."""
-    return (
-        db.query(models.Media)
-        .order_by(models.Media.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+def list_media(
+    skip: int = 0,
+    limit: int = 500,
+    q: str = None,
+    db: Session = Depends(get_db),
+):
+    limit = min(limit, 5000)
+    query = db.query(models.Media)
+    if q:
+        query = query.filter(models.Media.title.ilike(f"%{q}%"))
+    return query.order_by(models.Media.created_at.desc()).offset(skip).limit(limit).all()
 
 
 @app.get("/media/{media_id}", response_model=schemas.Media)
@@ -203,8 +205,12 @@ def update_media(
 
     # Renombrar archivo en disco
     if data.filename is not None and data.filename.strip():
+        # Sanitizar: solo el nombre base, sin path traversal
+        safe_name = Path(data.filename.strip()).name
+        if not safe_name or safe_name in ('.', '..'):
+            raise HTTPException(status_code=400, detail="Nombre de archivo invalido")
         old_path = Path(media.path)
-        new_path = old_path.parent / data.filename.strip()
+        new_path = old_path.parent / safe_name
 
         if not old_path.exists():
             raise HTTPException(status_code=404, detail="Archivo original no encontrado en disco")
@@ -286,7 +292,7 @@ def create_album(album: schemas.AlbumCreate, db: Session = Depends(get_db)):
         db.query(models.Album).filter(models.Album.name == album.name).first()
     )
     if existing:
-        raise HTTPException(status_code=400, detail="Ya existe un álbum con ese nombre")
+        raise HTTPException(status_code=409, detail="Ya existe un album con ese nombre")
 
     new_album = models.Album(name=album.name)
     db.add(new_album)
@@ -297,14 +303,25 @@ def create_album(album: schemas.AlbumCreate, db: Session = Depends(get_db)):
 
 @app.get("/albums", response_model=List[schemas.Album])
 def list_albums(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Lista todos los álbumes, con paginación."""
-    return db.query(models.Album).offset(skip).limit(limit).all()
+    """Lista todos los álbumes, con paginacion."""
+    return (
+        db.query(models.Album)
+        .options(selectinload(models.Album.media))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 @app.get("/albums/{album_id}", response_model=schemas.Album)
 def get_album(album_id: int, db: Session = Depends(get_db)):
     """Obtiene un álbum con su contenido multimedia."""
-    album = db.query(models.Album).filter(models.Album.id == album_id).first()
+    album = (
+        db.query(models.Album)
+        .options(selectinload(models.Album.media))
+        .filter(models.Album.id == album_id)
+        .first()
+    )
     if not album:
         raise HTTPException(status_code=404, detail="Álbum no encontrado")
     return album
@@ -328,7 +345,7 @@ def update_album(
         .first()
     )
     if conflict:
-        raise HTTPException(status_code=400, detail="Ya existe un álbum con ese nombre")
+        raise HTTPException(status_code=409, detail="Ya existe un album con ese nombre")
 
     album.name = album_data.name
     db.commit()

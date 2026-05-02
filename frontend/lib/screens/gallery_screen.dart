@@ -15,7 +15,13 @@ class GalleryScreen extends StatefulWidget {
 class _GalleryScreenState extends State<GalleryScreen> {
   List<Media> _media = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
   String? _error;
+  String _query = '';
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  static const _pageSize = 100;
 
   static const _meses = [
     '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -26,23 +32,76 @@ class _GalleryScreenState extends State<GalleryScreen> {
   void initState() {
     super.initState();
     _loadMedia();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _hasMore) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadMedia() async {
+    setState(() { _loading = true; _error = null; });
     try {
-      final media = await widget.api.getMedia(limit: 500);
+      final media = await widget.api.getMedia(
+        limit: _pageSize,
+        query: _query.isNotEmpty ? _query : null,
+      );
       if (!mounted) return;
-      setState(() { _media = media; _loading = false; _error = null; });
+      setState(() {
+        _media = media;
+        _loading = false;
+        _hasMore = media.length >= _pageSize;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
+  Future<void> _loadMore() async {
+    setState(() => _loadingMore = true);
+    try {
+      final more = await widget.api.getMedia(
+        skip: _media.length,
+        limit: _pageSize,
+        query: _query.isNotEmpty ? _query : null,
+      );
+      if (!mounted) return;
+      setState(() {
+        _media.addAll(more);
+        _loadingMore = false;
+        _hasMore = more.length >= _pageSize;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
+  void _search(String value) {
+    _query = value;
+    _media = [];
+    _hasMore = true;
+    _loadMedia();
+  }
+
   List<_MonthGroup> _buildGroups() {
     final map = <String, List<Media>>{};
     for (final m in _media) {
-      final key = '${m.createdAt.year}-${m.createdAt.month.toString().padLeft(2, '0')}';
+      final key =
+          '${m.createdAt.year}-${m.createdAt.month.toString().padLeft(2, '0')}';
       map.putIfAbsent(key, () => []).add(m);
     }
     return map.entries.map((e) {
@@ -58,6 +117,49 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildSearchBar(),
+        Expanded(child: _buildContent()),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar archivos...',
+          prefixIcon:
+              const Icon(Icons.search_rounded, size: 20, color: Color(0xFF999999)),
+          suffixIcon: _query.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear_rounded, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    _search('');
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          isDense: true,
+          filled: true,
+          fillColor: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        style: const TextStyle(fontSize: 14),
+        onChanged: (v) => _search(v),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
     if (_loading) return const SkeletonGallery();
 
     if (_error != null) {
@@ -69,7 +171,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
             const SizedBox(height: 16),
             Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadMedia, child: const Text('Reintentar')),
+            ElevatedButton(
+                onPressed: _loadMedia, child: const Text('Reintentar')),
           ],
         ),
       );
@@ -82,10 +185,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
           children: [
             Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text('No hay archivos multimedia',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            const Text('Usa el boton de escanear para indexar archivos'),
+            Text(
+              _query.isNotEmpty ? 'Sin resultados' : 'No hay archivos multimedia',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            if (_query.isEmpty) ...[
+              const SizedBox(height: 8),
+              const Text('Usa el boton de escanear para indexar archivos'),
+            ],
           ],
         ),
       );
@@ -96,6 +203,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return RefreshIndicator(
       onRefresh: _loadMedia,
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           for (final group in groups) ...[
             SliverToBoxAdapter(
@@ -123,7 +231,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     return _MediaTile(
                       media: m,
                       baseUrl: widget.api.baseUrl,
-                      onTap: () => _openDetail(m),
+                      onTap: () => _openDetail(m, group.media, index),
                     );
                   },
                   childCount: group.media.length,
@@ -131,19 +239,30 @@ class _GalleryScreenState extends State<GalleryScreen> {
               ),
             ),
           ],
+          if (_loadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  void _openDetail(Media media) {
+  void _openDetail(Media media, List<Media> group, int index) {
     Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 300),
         reverseTransitionDuration: const Duration(milliseconds: 250),
-        pageBuilder: (_, __, ___) =>
-            MediaDetailScreen(media: media, api: widget.api),
+        pageBuilder: (_, __, ___) => MediaDetailScreen(
+          media: media,
+          api: widget.api,
+          allMedia: group,
+          currentIndex: index,
+        ),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -165,7 +284,11 @@ class _MediaTile extends StatefulWidget {
   final String baseUrl;
   final VoidCallback onTap;
 
-  const _MediaTile({required this.media, required this.baseUrl, required this.onTap});
+  const _MediaTile({
+    required this.media,
+    required this.baseUrl,
+    required this.onTap,
+  });
 
   @override
   State<_MediaTile> createState() => _MediaTileState();
@@ -190,11 +313,21 @@ class _MediaTileState extends State<_MediaTile> {
                 ? (Matrix4.translationValues(0, -3, 0)..scale(1.02))
                 : Matrix4.identity(),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              border: Border.all(
+                color: _hovered
+                    ? Theme.of(context).colorScheme.primary.withAlpha(40)
+                    : Colors.grey.shade300,
+              ),
               boxShadow: _hovered
-                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4))]
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
                   : null,
             ),
             clipBehavior: Clip.antiAlias,
