@@ -400,25 +400,32 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             tooltip: 'Volver',
             onPressed: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              _displayName,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (widget.media.format != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
                 color: const Color(0xFFD81B60).withAlpha(25),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
                 widget.media.format!.toUpperCase(),
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFD81B60),
                   letterSpacing: 0.5,
                 ),
               ),
             ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -436,7 +443,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               ),
             ),
           ),
-          const Spacer(),
           if (widget.allMedia != null && widget.currentIndex != null)
             Material(
               color: Colors.transparent,
