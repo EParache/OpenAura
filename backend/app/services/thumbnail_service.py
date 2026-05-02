@@ -86,7 +86,8 @@ def generate_video_thumbnail(media_path: str) -> str | None:
                 "-y",
                 str(thumb_path),
             ],
-            capture_output=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=30,
         )
         if result.returncode == 0 and thumb_path.exists():

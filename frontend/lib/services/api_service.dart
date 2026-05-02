@@ -11,6 +11,18 @@ class ApiService {
 
   ApiService({required this.baseUrl});
 
+  void dispose() {
+    _client.close();
+  }
+
+  dynamic _safeJsonDecode(String body) {
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return {'detail': 'Error del servidor'};
+    }
+  }
+
   // ── Media ────────────────────────────────────────────────────────────────
 
   Future<List<Media>> getMedia({int skip = 0, int limit = 100}) async {
@@ -44,10 +56,10 @@ class ApiService {
       body: jsonEncode(body),
     );
     if (response.statusCode == 200) {
-      return Media.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      return Media.fromJson(_safeJsonDecode(response.body) as Map<String, dynamic>);
     }
     final detail =
-        (jsonDecode(response.body) as Map<String, dynamic>)['detail'] ?? 'Error desconocido';
+        (_safeJsonDecode(response.body) as Map<String, dynamic>)['detail'] ?? 'Error desconocido';
     throw Exception(detail);
   }
 
@@ -55,16 +67,16 @@ class ApiService {
     final response = await _client.delete(Uri.parse('$baseUrl/media/$id'));
     if (response.statusCode == 200) return;
     final detail =
-        (jsonDecode(response.body) as Map<String, dynamic>)['detail'] ?? 'Error desconocido';
+        (_safeJsonDecode(response.body) as Map<String, dynamic>)['detail'] ?? 'Error desconocido';
     throw Exception(detail);
   }
 
   Future<Map<String, dynamic>> getHostInfo() async {
     final response = await _client.get(Uri.parse('$baseUrl/host-info'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      return _safeJsonDecode(response.body) as Map<String, dynamic>;
     }
-    return {'hostname': 'HOST NAME', 'username': 'USER PC NAME'};
+    throw Exception('No se pudo conectar al servidor');
   }
 
   // ── Escaneo ──────────────────────────────────────────────────────────────

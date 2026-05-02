@@ -61,7 +61,7 @@ def scan_directory(db: Session, directory_path: str) -> dict:
         if suffix not in all_supported:
             continue
 
-        # Verificar si ya está indexado
+        # Verificar si ya esta indexado
         db_media = (
             db.query(models.Media)
             .filter(models.Media.path == str(file_path))
@@ -74,16 +74,19 @@ def scan_directory(db: Session, directory_path: str) -> dict:
             ) if db_media.thumbnail_path else None
             needs_thumb = not thumb_file or not thumb_file.exists()
             if needs_thumb:
-                if db_media.type == 'image':
-                    db_media.thumbnail_path = (
-                        thumbnail_service.generate_thumbnail(str(file_path))
-                    )
-                    db_media.metadata_json = get_image_metadata(file_path)
-                else:
-                    db_media.thumbnail_path = (
-                        thumbnail_service.generate_video_thumbnail(str(file_path))
-                    )
-                stats["added"] += 1
+                try:
+                    if db_media.type == 'image':
+                        db_media.thumbnail_path = (
+                            thumbnail_service.generate_thumbnail(str(file_path))
+                        )
+                        db_media.metadata_json = get_image_metadata(file_path)
+                    else:
+                        db_media.thumbnail_path = (
+                            thumbnail_service.generate_video_thumbnail(str(file_path))
+                        )
+                    stats["added"] += 1
+                except Exception:
+                    stats["errors"] += 1
             else:
                 stats["skipped"] += 1
             continue
@@ -118,7 +121,12 @@ def scan_directory(db: Session, directory_path: str) -> dict:
         except Exception:
             stats["errors"] += 1
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        stats["errors"] += 1
+        print(f"Error en commit final del scan: {e}")
     return stats
 
 

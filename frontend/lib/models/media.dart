@@ -40,7 +40,16 @@ class Media {
     return '$baseUrl$thumbnailPath';
   }
 
-  int? get width => metadataJson?['width'] as int?;
-  int? get height => metadataJson?['height'] as int?;
-  String? get format => metadataJson?['format'] as String?;
+  int? get width {
+    final v = metadataJson?['width'];
+    return v is int ? v : null;
+  }
+  int? get height {
+    final v = metadataJson?['height'];
+    return v is int ? v : null;
+  }
+  String? get format {
+    final v = metadataJson?['format'];
+    return v is String ? v : null;
+  }
 }

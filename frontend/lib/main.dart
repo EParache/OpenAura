@@ -4,6 +4,7 @@ import 'services/api_service.dart';
 import 'services/settings_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     debugPrint('=== FLUTTER ERROR ===');
@@ -12,9 +13,17 @@ void main() {
   };
 
   runApp(
-    const MaterialApp(
-      home: _Bootstrap(),
+    MaterialApp(
+      home: const _Bootstrap(),
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF0F2F5),
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF1A1A2E),
+      ),
     ),
   );
 }

@@ -78,6 +78,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         ],
       ),
     );
+    controller.dispose();
 
     if (name != null && name.trim().isNotEmpty) {
       try {
@@ -272,6 +273,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         ],
       ),
     );
+    controller.dispose();
 
     if (newName != null && newName.trim().isNotEmpty && newName != album.name) {
       try {

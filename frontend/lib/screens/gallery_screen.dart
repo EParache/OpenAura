@@ -95,17 +95,43 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadMedia,
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 24),
-        itemCount: groups.length,
-        itemBuilder: (context, index) {
-          final group = groups[index];
-          return _MonthSection(
-            group: group,
-            baseUrl: widget.api.baseUrl,
-            onTap: (media) => _openDetail(media),
-          );
-        },
+      child: CustomScrollView(
+        slivers: [
+          for (final group in groups) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  group.label,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final m = group.media[index];
+                    return _MediaTile(
+                      media: m,
+                      baseUrl: widget.api.baseUrl,
+                      onTap: () => _openDetail(m),
+                    );
+                  },
+                  childCount: group.media.length,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -122,7 +148,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
           return FadeTransition(opacity: animation, child: child);
         },
       ),
-    ).then((_) => _loadMedia());
+    ).then((result) {
+      if (result == true) _loadMedia();
+    });
   }
 }
 
@@ -130,49 +158,6 @@ class _MonthGroup {
   final String label;
   final List<Media> media;
   const _MonthGroup({required this.label, required this.media});
-}
-
-class _MonthSection extends StatelessWidget {
-  final _MonthGroup group;
-  final String baseUrl;
-  final void Function(Media) onTap;
-
-  const _MonthSection({required this.group, required this.baseUrl, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            group.label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF555555),
-                ),
-          ),
-        ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 5,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
-          ),
-          itemCount: group.media.length,
-          itemBuilder: (context, index) {
-            final m = group.media[index];
-            return _MediaTile(media: m, baseUrl: baseUrl, onTap: () => onTap(m));
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _MediaTile extends StatefulWidget {

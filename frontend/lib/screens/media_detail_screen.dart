@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,6 +29,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   VideoPlayerController? _videoController;
+  Timer? _videoTimeout;
 
   @override
   void initState() {
@@ -54,6 +56,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _initVideo() {
+    _videoTimeout?.cancel();
+    _videoController?.dispose();
     _videoController = VideoPlayerController.networkUrl(
       Uri.parse(widget.media.fileUrl(widget.api.baseUrl)),
     );
@@ -66,8 +70,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       if (mounted) setState(() {});
     });
 
-    // Timeout de seguridad: si no inicializa en 10s, mostrar fallback
-    Future.delayed(const Duration(seconds: 10), () {
+    _videoTimeout = Timer(const Duration(seconds: 10), () {
       if (mounted &&
           _videoController != null &&
           !_videoController!.value.isInitialized) {
@@ -83,6 +86,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _titleController.dispose();
     _filenameController.dispose();
     _fadeController.dispose();
+    _videoTimeout?.cancel();
     _videoController?.dispose();
     super.dispose();
   }
@@ -249,10 +253,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     child: OverflowBox(
                       alignment: Alignment.centerLeft,
                       maxWidth: MediaQuery.of(context).size.width * 0.27,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 250),
-                        opacity: _panelExpanded ? 1.0 : 0.0,
-                        child: _buildInfoPanel(),
+                      child: IgnorePointer(
+                        ignoring: !_panelExpanded,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 250),
+                          opacity: _panelExpanded ? 1.0 : 0.0,
+                          child: _buildInfoPanel(),
+                        ),
                       ),
                     ),
                   ),

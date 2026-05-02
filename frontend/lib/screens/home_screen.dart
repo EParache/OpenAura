@@ -41,7 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _hostname = (info['hostname'] as String?) ?? 'HOST NAME';
         _username = (info['username'] as String?) ?? 'USER PC NAME';
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error detectando host info: $e');
+    }
   }
 
   void _buildScreens() {
@@ -72,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (removed > 0) parts.add('$removed eliminado(s)');
       final msg = parts.isEmpty ? 'Sin cambios' : parts.join(', ');
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
@@ -212,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 
   void _openScanDialog(BuildContext context) {
@@ -220,6 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => ScanDialog(api: _api),
     ).then((_) {
+      if (!mounted) return;
       _refreshKey++;
       _buildScreens();
       setState(() {});

@@ -9,7 +9,7 @@ Endpoints principales:
   CRUD /albums      — Gestión completa de álbumes.
 """
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -147,9 +147,9 @@ def get_media(media_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/media/{media_id}/file")
-def serve_media_file(media_id: int, db: Session = Depends(get_db)):
+def serve_media_file(media_id: int, db: Session = Depends(get_db), bg: BackgroundTasks = None):
     """Sirve el archivo original a resolucion completa.
-    Convierte HEIC a JPEG al vuelo para compatibilidad con navegadores."""
+    Convierte HEIC a JPEG y videos a MP4 al vuelo para compatibilidad con navegadores."""
     media = db.query(models.Media).filter(models.Media.id == media_id).first()
     if not media:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
@@ -172,7 +172,6 @@ def serve_media_file(media_id: int, db: Session = Depends(get_db)):
 
     if suffix in ('.mov', '.avi', '.mkv'):
         try:
-            import subprocess
             import tempfile
             out = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
             out.close()
@@ -180,10 +179,13 @@ def serve_media_file(media_id: int, db: Session = Depends(get_db)):
                 ["ffmpeg", "-i", str(file_path), "-c:v", "libx264",
                  "-preset", "ultrafast", "-crf", "28", "-c:a", "aac",
                  "-movflags", "faststart", "-y", out.name],
-                capture_output=True, timeout=60,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                timeout=60,
             )
-            return FileResponse(out.name, media_type='video/mp4',
-                               filename=file_path.stem + '.mp4')
+            with open(out.name, 'rb') as f:
+                data = f.read()
+            os.unlink(out.name)
+            return Response(content=data, media_type='video/mp4')
         except Exception:
             return FileResponse(file_path)
 
@@ -211,18 +213,12 @@ def update_media(
                 status_code=409, detail="Ya existe un archivo con ese nombre en el directorio"
             )
 
-        try:
-            shutil.move(str(old_path), str(new_path))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"No se pudo renombrar: {str(e)}")
-
         media.path = str(new_path)
 
         # Regenerar miniatura con nueva ruta
         if media.type == 'image':
             new_thumb = thumbnail_service.generate_thumbnail(str(new_path))
             if new_thumb:
-                # Borrar miniatura vieja del cache
                 if media.thumbnail_path:
                     old_thumb = (
                         thumbnail_service.CACHE_DIR
@@ -230,6 +226,19 @@ def update_media(
                     )
                     old_thumb.unlink(missing_ok=True)
                 media.thumbnail_path = new_thumb
+
+        # Commit DB primero, luego renombrar en disco
+        db.commit()
+        try:
+            shutil.move(str(old_path), str(new_path))
+        except Exception as e:
+            # Rollback: restaurar path original en DB
+            media.path = str(old_path)
+            db.commit()
+            raise HTTPException(status_code=500, detail=f"No se pudo renombrar: {str(e)}")
+
+        db.refresh(media)
+        return media
 
     if data.title is not None:
         media.title = data.title
