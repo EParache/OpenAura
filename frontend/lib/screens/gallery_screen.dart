@@ -6,7 +6,8 @@ import 'media_detail_screen.dart';
 
 class GalleryScreen extends StatefulWidget {
   final ApiService api;
-  const GalleryScreen({super.key, required this.api});
+  final String initialQuery;
+  const GalleryScreen({super.key, required this.api, this.initialQuery = ''});
 
   @override
   State<GalleryScreen> createState() => _GalleryScreenState();
@@ -19,7 +20,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
   bool _hasMore = true;
   String? _error;
   String _query = '';
-  final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   static const _pageSize = 100;
 
@@ -31,13 +31,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
   @override
   void initState() {
     super.initState();
+    _query = widget.initialQuery;
     _loadMedia();
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -90,13 +90,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
     }
   }
 
-  void _search(String value) {
-    _query = value;
-    _media = [];
-    _hasMore = true;
-    _loadMedia();
-  }
-
   List<_MonthGroup> _buildGroups() {
     final map = <String, List<Media>>{};
     for (final m in _media) {
@@ -117,46 +110,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildSearchBar(),
-        Expanded(child: _buildContent()),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Buscar archivos...',
-          prefixIcon:
-              const Icon(Icons.search_rounded, size: 20, color: Color(0xFF999999)),
-          suffixIcon: _query.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear_rounded, size: 18),
-                  onPressed: () {
-                    _searchController.clear();
-                    _search('');
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          isDense: true,
-          filled: true,
-          fillColor: Theme.of(context).scaffoldBackgroundColor,
-        ),
-        style: const TextStyle(fontSize: 14),
-        onChanged: (v) => _search(v),
-      ),
-    );
+    return _buildContent();
   }
 
   Widget _buildContent() {

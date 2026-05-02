@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<Widget> _screens;
   bool _scanning = false;
   int _refreshKey = 0;
+  String _searchQuery = '';
   String _hostname = 'HOST NAME';
   String _username = 'USER PC NAME';
 
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _buildScreens() {
     _screens = [
-      GalleryScreen(key: ValueKey('gallery_$_refreshKey'), api: _api),
+      GalleryScreen(key: ValueKey('gallery_$_refreshKey'), api: _api, initialQuery: _searchQuery),
       AlbumsScreen(key: ValueKey('albums_$_refreshKey'), api: _api),
     ];
   }
@@ -131,7 +132,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   hostname: _hostname,
                   username: _username,
                   scanning: _scanning,
-                  onRescan: _rescan,
+                  searchQuery: _searchQuery,
+                  onSearchChanged: (q) {
+                    setState(() => _searchQuery = q);
+                    _buildScreens();
+                  },
                 ),
                 const Divider(height: 1),
                 Expanded(
@@ -231,18 +236,48 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends StatefulWidget {
   final String hostname;
   final String username;
   final bool scanning;
-  final VoidCallback onRescan;
+  final String searchQuery;
+  final ValueChanged<String> onSearchChanged;
 
   const _Header({
     required this.hostname,
     required this.username,
     required this.scanning,
-    required this.onRescan,
+    required this.searchQuery,
+    required this.onSearchChanged,
   });
+
+  @override
+  State<_Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends State<_Header> {
+  late TextEditingController _searchController;
+  bool _showSearch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.searchQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant _Header oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.searchQuery.isEmpty && _searchController.text.isNotEmpty) {
+      _searchController.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -262,12 +297,62 @@ class _Header extends StatelessWidget {
               ),
             ),
             const Spacer(),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              width: _showSearch ? 220 : 0,
+              child: _showSearch
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar...',
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  widget.onSearchChanged('');
+                                },
+                              )
+                            : null,
+                      ),
+                      style: const TextStyle(fontSize: 13),
+                      onChanged: widget.onSearchChanged,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                size: 22,
+              ),
+              tooltip: 'Buscar',
+              onPressed: () => setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  widget.onSearchChanged('');
+                }
+              }),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              color: const Color(0xFF777777),
+            ),
+            const SizedBox(width: 6),
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  hostname,
+                  widget.hostname,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -275,7 +360,7 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  username,
+                  widget.username,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w400,

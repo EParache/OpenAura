@@ -33,7 +33,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   bool _saving = false;
   bool _deleting = false;
   bool _showFullImage = false;
-  bool _panelExpanded = true;
+  bool _panelExpanded = false;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   VideoPlayerController? _videoController;
