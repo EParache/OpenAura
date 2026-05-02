@@ -67,7 +67,7 @@ class _MenuButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 70,
+        height: 48,
         color: const Color(0xFF4A4A4A),
         child: const Center(
           child: Icon(Icons.menu, color: Colors.white, size: 26),

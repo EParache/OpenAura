@@ -342,7 +342,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   Widget _buildAppBar() {
     return Container(
-      height: 56,
+      height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,

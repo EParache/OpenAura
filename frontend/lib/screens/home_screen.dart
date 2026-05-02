@@ -282,7 +282,7 @@ class _HeaderState extends State<_Header> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 48,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
@@ -290,7 +290,7 @@ class _HeaderState extends State<_Header> {
             const Text(
               'OPEN AURA',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF333333),
                 letterSpacing: 1,
@@ -354,7 +354,7 @@ class _HeaderState extends State<_Header> {
                 Text(
                   widget.hostname,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF555555),
                   ),
