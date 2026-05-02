@@ -37,7 +37,7 @@ class Media {
 
   String? thumbnailUrl(String baseUrl) {
     if (thumbnailPath == null || thumbnailPath!.isEmpty) return null;
-    return '$baseUrl$thumbnailPath';
+    return '$baseUrl$thumbnailPath?v=$id';
   }
 
   int? get width {

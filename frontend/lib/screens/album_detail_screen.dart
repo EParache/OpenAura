@@ -191,7 +191,10 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                                         pageBuilder: (_, __, ___) =>
                                             MediaDetailScreen(
                                                 media: mediaItem,
-                                                api: widget.api),
+                                                api: widget.api,
+                                                allMedia: _album.media,
+                                                currentIndex: index,
+                                            ),
                                         transitionsBuilder:
                                             (_, animation, __, child) {
                                           return FadeTransition(
