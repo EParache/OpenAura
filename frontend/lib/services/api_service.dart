@@ -25,13 +25,16 @@ class ApiService {
 
   // ── Media ────────────────────────────────────────────────────────────────
 
-  Future<List<Media>> getMedia({int skip = 0, int limit = 100, String? query}) async {
+  Future<List<Media>> getMedia({int skip = 0, int limit = 100, String? query, String? type}) async {
     final params = <String, String>{
       'skip': '$skip',
       'limit': '$limit',
     };
     if (query != null && query.isNotEmpty) {
       params['q'] = query;
+    }
+    if (type != null && type.isNotEmpty) {
+      params['type'] = type;
     }
     final uri = Uri.parse('$baseUrl/media').replace(queryParameters: params);
     final response = await _client.get(uri);

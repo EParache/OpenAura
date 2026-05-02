@@ -58,11 +58,18 @@ class _AuraSidebarState extends State<AuraSidebar> {
                     onTap: () => widget.onChanged(0),
                   ),
                   _NavItem(
-                    icon: Icons.photo_album_rounded,
-                    label: 'Albumes',
+                    icon: Icons.videocam_rounded,
+                    label: 'Videos',
                     selected: widget.selectedIndex == 1,
                     expanded: _expanded,
                     onTap: () => widget.onChanged(1),
+                  ),
+                  _NavItem(
+                    icon: Icons.photo_album_rounded,
+                    label: 'Albumes',
+                    selected: widget.selectedIndex == 2,
+                    expanded: _expanded,
+                    onTap: () => widget.onChanged(2),
                   ),
                   const Spacer(),
                   _GearMenu(

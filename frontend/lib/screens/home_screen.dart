@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../widgets/aura_sidebar.dart';
 import 'gallery_screen.dart';
+import 'videos_screen.dart';
 import 'albums_screen.dart';
 import 'scan_screen.dart';
 
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _buildScreens() {
     _screens = [
       GalleryScreen(key: ValueKey('gallery_$_refreshKey'), api: _api, initialQuery: _searchQuery),
+      VideosScreen(key: ValueKey('videos_$_refreshKey'), api: _api),
       AlbumsScreen(key: ValueKey('albums_$_refreshKey'), api: _api),
     ];
   }

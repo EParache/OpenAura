@@ -130,12 +130,15 @@ def list_media(
     skip: int = 0,
     limit: int = 500,
     q: str = None,
+    type: str = None,
     db: Session = Depends(get_db),
 ):
     limit = min(limit, 5000)
     query = db.query(models.Media)
     if q:
         query = query.filter(models.Media.title.ilike(f"%{q}%"))
+    if type:
+        query = query.filter(models.Media.type == type)
     return query.order_by(models.Media.created_at.desc()).offset(skip).limit(limit).all()
 
 
