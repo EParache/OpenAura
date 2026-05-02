@@ -21,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late ApiService _api;
   late List<Widget> _screens;
-  bool _scanning = false;
   int _refreshKey = 0;
   String _searchQuery = '';
   String _hostname = 'HOST NAME';
@@ -65,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _rescan() async {
-    setState(() => _scanning = true);
     try {
       final result = await _api.rescan();
       if (!mounted) return;
@@ -87,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _refreshKey++;
       _buildScreens();
-      setState(() => _scanning = false);
+      setState(() {});
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      setState(() => _scanning = false);
+      setState(() {});
     }
   }
 
@@ -139,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF0F2F5),
       body: Row(
         children: [
           AuraSidebar(
@@ -151,34 +149,49 @@ class _HomeScreenState extends State<HomeScreen> {
             onSettings: _onSettingsTap,
           ),
           Expanded(
-            child: Column(
-              children: [
-                _Header(
-                  hostname: _hostname,
-                  username: _username,
-                  scanning: _scanning,
-                  searchQuery: _searchQuery,
-                  onSearchChanged: (q) {
-                    setState(() => _searchQuery = q);
-                    _buildScreens();
-                  },
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 30, 30),
+              child: Column(
+                children: [
+                  _Header(
+                    hostname: _hostname,
+                    username: _username,
+                    searchQuery: _searchQuery,
+                    onSearchChanged: (q) {
+                      setState(() => _searchQuery = q);
+                      _buildScreens();
                     },
-                    child: _screens[_selectedIndex],
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 20,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: _screens[_selectedIndex],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -264,14 +277,12 @@ class _HomeScreenState extends State<HomeScreen> {
 class _Header extends StatefulWidget {
   final String hostname;
   final String username;
-  final bool scanning;
   final String searchQuery;
   final ValueChanged<String> onSearchChanged;
 
   const _Header({
     required this.hostname,
     required this.username,
-    required this.scanning,
     required this.searchQuery,
     required this.onSearchChanged,
   });
@@ -307,11 +318,29 @@ class _HeaderState extends State<_Header> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      height: 80,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFD81B60), Color(0xFFAD1457)],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
               'OPEN AURA',
               style: TextStyle(
@@ -399,17 +428,13 @@ class _HeaderState extends State<_Header> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFD81B60), Color(0xFFAD1457)],
-                ),
-                borderRadius: BorderRadius.circular(19),
+                color: Colors.grey.shade300,
+                shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person_rounded,
                 size: 22,
-                color: Colors.white,
+                color: Colors.grey.shade600,
               ),
             ),
           ],

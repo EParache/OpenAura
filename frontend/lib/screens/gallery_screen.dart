@@ -268,18 +268,16 @@ class _MediaTileState extends State<_MediaTile> {
                 : Matrix4.identity(),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _hovered
-                    ? Theme.of(context).colorScheme.primary.withAlpha(40)
-                    : Colors.grey.shade300,
-              ),
+              borderRadius: BorderRadius.circular(18),
+              border: _hovered
+                  ? Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(30))
+                  : null,
               boxShadow: _hovered
                   ? [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       )
                     ]
                   : null,
