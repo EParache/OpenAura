@@ -83,6 +83,17 @@ def scan_directory(db: Session, directory_path: str) -> dict:
             .first()
         )
         if db_media:
+            # Actualizar fecha si hay EXIF
+            if db_media.type == 'image':
+                try:
+                    metadata = get_image_metadata(file_path)
+                    exif_date = get_exif_date(metadata)
+                    if exif_date and db_media.created_at != exif_date:
+                        db_media.created_at = exif_date
+                        db_media.metadata_json = metadata
+                except Exception:
+                    pass
+
             # Si la miniatura no existe, regenerarla (ej. cache limpiado)
             thumb_file = (
                 thumbnail_service.CACHE_DIR / Path(db_media.thumbnail_path).name
@@ -94,7 +105,7 @@ def scan_directory(db: Session, directory_path: str) -> dict:
                         db_media.thumbnail_path = (
                             thumbnail_service.generate_thumbnail(str(file_path))
                         )
-                        db_media.metadata_json = get_image_metadata(file_path)
+                        db_media.metadata_json = db_media.metadata_json or get_image_metadata(file_path)
                     else:
                         db_media.thumbnail_path = (
                             thumbnail_service.generate_video_thumbnail(str(file_path))
