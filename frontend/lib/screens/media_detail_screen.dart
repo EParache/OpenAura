@@ -58,6 +58,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
     _videoController!.initialize().then((_) {
       if (mounted) setState(() {});
+    }).catchError((e) {
+      debugPrint('Error inicializando video: $e');
+      if (mounted) setState(() {});
     });
   }
 
@@ -351,7 +354,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   Widget _buildVideoPreview() {
     final controller = _videoController;
-    if (controller == null || !controller.value.isInitialized) {
+    final hasError = controller != null &&
+        controller.value.hasError &&
+        !controller.value.isInitialized;
+
+    if (controller == null || (!controller.value.isInitialized && !hasError)) {
       return Container(
         color: const Color(0xFF1A1A1A),
         child: const Center(
@@ -368,6 +375,45 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       );
     }
 
+    if (hasError) {
+      return Container(
+        color: const Color(0xFF1A1A1A),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_off, size: 64, color: Colors.white.withAlpha(60)),
+              const SizedBox(height: 16),
+              Text(
+                'No se pudo reproducir el video',
+                style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 15),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'El formato puede no ser compatible con el navegador',
+                style: TextStyle(color: Colors.white.withAlpha(80), fontSize: 12),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () {
+                  // Re-intentar
+                  _videoController?.dispose();
+                  _videoController = null;
+                  _initVideo();
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Reintentar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: BorderSide(color: Colors.white.withAlpha(40)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -377,7 +423,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         });
       },
       child: Container(
-        color: const Color(0xFF1A1A1A),
+        color: Colors.black,
         child: Stack(
           fit: StackFit.expand,
           children: [
